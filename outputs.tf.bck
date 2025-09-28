@@ -1,0 +1,38 @@
+
+output "provider_endpoint_service_name" {
+  value       = module.provider_vpc_b.endpoint_service_name
+  description = "Service name exposed by Provider VPC-B"
+}
+
+output "provider_web_instance_ids" {
+  value       = module.provider_vpc_b.web_instance_ids
+  description = "Provider web EC2 instance IDs"
+}
+
+output "consumer_vpc_endpoint_dns_entries" {
+  value       = module.consumer_vpc_a.vpc_endpoint_dns_entries
+  description = "Regional and zonal DNS entries for the consumer interface endpoint"
+}
+
+output "consumer_instance_id" {
+  value       = module.consumer_vpc_a.consumer_instance_id
+  description = "Consumer instance to connect via EIC"
+}
+
+output "notes" {
+  value = <<EON
+# Provider (VPC-B): Open EIC tunnel and copy your files (no bastion, no IGW)
+aws ec2-instance-connect open-tunnel --instance-id <one_of: provider_web_instance_ids> --os-user ec2-user
+scp -i </path/to/provider_private_key> -P <LOCAL_PORT> ./nginx.tar.gz ec2-user@localhost:~/
+ssh -i </path/to/provider_private_key> -p <LOCAL_PORT> ec2-user@localhost
+
+# Consumer (VPC-A): Open EIC tunnel
+aws ec2-instance-connect open-tunnel --instance-id ${module.consumer_vpc_a.consumer_instance_id} --os-user ec2-user
+ssh -i </path/to/consumer_private_key> -p <LOCAL_PORT> ec2-user@localhost
+
+# From the Consumer instance, test PrivateLink using DNS from consumer_vpc_endpoint_dns_entries
+curl -s http://<regional-dns>
+curl -s http://<zonal-dns-azA>
+curl -s http://<zonal-dns-azB>
+EON
+}
