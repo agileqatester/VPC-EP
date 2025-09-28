@@ -3,7 +3,7 @@
 *.tfstate
 *.tfstate.*
 .terraform/
-terraform.tfvars
+#terraform.tfvars
 *.tf_bk
 *.tfvars
 *.tfvars.json
