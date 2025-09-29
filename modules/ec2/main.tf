@@ -21,6 +21,8 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+
+
 # Security Group for EC2 Instance
 resource "aws_security_group" "ec2" {
   name_prefix = "${var.project_name}-ec2-"

@@ -102,6 +102,12 @@ output "provider_service_name" {
   value       = aws_vpc_endpoint_service.provider_service.service_name
 }
 
+# Environment Configuration Reminder
+output "IMPORTANT_var_file_reminder" {
+  description = "Reminder to use environment-specific var files"
+  value = "\n\n🚨 For proper environment configuration, use:\n\n  Dev:  terraform apply -var-file=environments/dev.tfvars -var-file=terraform.tfvars\n  Prod: terraform apply -var-file=environments/prod.tfvars -var-file=terraform.tfvars\n\n  Same for destroy operations.\n"
+}
+
 # Connection Information
 output "connection_info" {
   description = "Information for connecting to the infrastructure"
@@ -112,5 +118,6 @@ output "connection_info" {
     consumer_eic_connect_command = "aws ec2-instance-connect ssh --instance-id ${module.consumer_ec2.ec2_instance_id} --os-user ec2-user --connection-type eice"
     consumer_session_manager_command = "aws ssm start-session --target ${module.consumer_ec2.ec2_instance_id}"
     vpc_endpoint_test_url = "http://${aws_vpc_endpoint.consumer_to_provider.dns_entry[0].dns_name}"
+    privatelink_test_reminder = "From consumer EC2, test PrivateLink: curl http://${var.private_dns_record}.${var.private_dns_zone}:${var.app_port}"
   }
 }

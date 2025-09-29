@@ -20,25 +20,7 @@ variable "private_subnet_1_id" {
   type        = string
 }
 
-variable "instance_type" {
-  description = "EC2 instance type"
-  type        = string
-}
 
-variable "root_volume_size" {
-  description = "Size of the root volume in GB"
-  type        = number
-}
-
-variable "root_volume_iops" {
-  description = "IOPS for GP3 volume"
-  type        = number
-}
-
-variable "root_volume_throughput" {
-  description = "Throughput for GP3 volume in MB/s"
-  type        = number
-}
 
 variable "public_key_path" {
   description = "Path to the public key file"
@@ -68,6 +50,26 @@ variable "vpc_endpoints" {
     ec2messages = string
     s3          = string
   })
+}
+
+variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+}
+
+variable "root_volume_size" {
+  description = "Size of the root volume in GB"
+  type        = number
+}
+
+variable "root_volume_iops" {
+  description = "IOPS for GP3 volume"
+  type        = number
+}
+
+variable "root_volume_throughput" {
+  description = "Throughput for GP3 volume in MB/s"
+  type        = number
 }
 
 variable "app_port" {

@@ -48,29 +48,7 @@ variable "lb_subnet_2_cidr" {
   default     = "10.0.4.0/24"
 }
 
-variable "instance_type" {
-  description = "EC2 instance type"
-  type        = string
-  default     = "t3.micro"
-}
 
-variable "root_volume_size" {
-  description = "Size of the root volume in GB"
-  type        = number
-  default     = 30
-}
-
-variable "root_volume_iops" {
-  description = "IOPS for GP3 volume (3000-16000)"
-  type        = number
-  default     = 3000
-}
-
-variable "root_volume_throughput" {
-  description = "Throughput for GP3 volume in MB/s (125-1000)"
-  type        = number
-  default     = 125
-}
 
 variable "public_key_path" {
   description = "Path to the public key file"
@@ -115,6 +93,30 @@ variable "domain_name" {
   default     = ""
 }
 
+variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "root_volume_size" {
+  description = "Size of the root volume in GB"
+  type        = number
+  default     = 30
+}
+
+variable "root_volume_iops" {
+  description = "IOPS for GP3 volume"
+  type        = number
+  default     = 3000
+}
+
+variable "root_volume_throughput" {
+  description = "Throughput for GP3 volume in MB/s"
+  type        = number
+  default     = 125
+}
+
 variable "app_port" {
   description = "Port number for the application server"
   type        = number
@@ -125,4 +127,27 @@ variable "consumer_vpc_cidr" {
   description = "CIDR block for Consumer VPC A"
   type        = string
   default     = "10.1.0.0/16"
+}
+
+variable "private_dns_zone" {
+  description = "Private DNS zone name for consumer VPC"
+  type        = string
+  default     = "provider.local"
+}
+
+variable "private_dns_record" {
+  description = "Private DNS record name for the service"
+  type        = string
+  default     = "api"
+}
+
+variable "confirm_var_files" {
+  description = "Confirm you are using environment-specific var files (set to true)"
+  type        = bool
+  default     = false
+  
+  validation {
+    condition = var.confirm_var_files == true
+    error_message = "\n\n🚨 STOP! Use environment-specific var files:\n\n  Dev:  terraform apply -var-file=environments/dev.tfvars -var-file=terraform.tfvars\n  Prod: terraform apply -var-file=environments/prod.tfvars -var-file=terraform.tfvars\n\n  Or set confirm_var_files=true if using defaults intentionally.\n"
+  }
 }

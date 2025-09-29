@@ -157,7 +157,7 @@ resource "aws_vpc_endpoint" "consumer_to_provider" {
 
 # Route53 Private Hosted Zone for friendly DNS
 resource "aws_route53_zone" "consumer_private" {
-  name = "provider.local"
+  name = var.private_dns_zone
   
   vpc {
     vpc_id = module.consumer_vpc_a.vpc_id
@@ -168,7 +168,7 @@ resource "aws_route53_zone" "consumer_private" {
 
 resource "aws_route53_record" "provider_service" {
   zone_id = aws_route53_zone.consumer_private.zone_id
-  name    = "api.provider.local"
+  name    = "${var.private_dns_record}.${var.private_dns_zone}"
   type    = "A"
   
   alias {
