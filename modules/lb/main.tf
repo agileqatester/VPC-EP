@@ -122,7 +122,8 @@ resource "aws_lb_target_group" "nlb" {
     healthy_threshold   = 2
     interval            = 30
     port                = "traffic-port"
-    protocol            = "TCP"
+    protocol            = "HTTP"
+    path                = "/"
     timeout             = 6
     unhealthy_threshold = 2
   }
@@ -170,7 +171,7 @@ resource "aws_lb_listener" "nlb_tcp" {
   count = var.lb_type == "network" ? 1 : 0
   
   load_balancer_arn = aws_lb.nlb[0].arn
-  port              = "80"
+  port              = var.app_port
   protocol          = "TCP"
   
   default_action {

@@ -98,6 +98,15 @@ resource "aws_security_group" "ec2" {
     description = "HTTP for package repositories"
   }
   
+  # Outbound for app port (VPC Endpoint)
+  egress {
+    from_port   = var.app_port
+    to_port     = var.app_port
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/8"]
+    description = "HTTP to VPC Endpoint"
+  }
+  
   tags = {
     Name        = "${var.project_name}-ec2-sg"
     Environment = var.environment

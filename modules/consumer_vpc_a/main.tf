@@ -3,30 +3,10 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
-
-  filter {
-    name   = "name"
-    values = ["al2023-ami-2023.*-x86_64"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  filter {
-    name   = "architecture"
-    values = ["x86_64"]
-  }
-}
-
 locals {
   azs = slice(data.aws_availability_zones.available.names, 0, 2)
-  vpc_a_priv_t1 = [ cidrsubnet(var.vpc_cidr, 4, 0), cidrsubnet(var.vpc_cidr, 4, 1) ]
-  vpc_a_priv_t2 = [ cidrsubnet(var.vpc_cidr, 4, 2), cidrsubnet(var.vpc_cidr, 4, 3) ]
+  eic_subnets = [ cidrsubnet(var.vpc_cidr, 4, 0), cidrsubnet(var.vpc_cidr, 4, 1) ]
+  ec2_subnets = [ cidrsubnet(var.vpc_cidr, 4, 2), cidrsubnet(var.vpc_cidr, 4, 3) ]
 }
 
 resource "aws_vpc" "this" {
@@ -41,107 +21,94 @@ resource "aws_route_table" "private" {
   tags   = { Name = "${var.project_name}-a-private-rt" }
 }
 
-resource "aws_subnet" "priv_t1" {
-  for_each = { for idx, az in local.azs : az => { cidr = local.vpc_a_priv_t1[idx], az = az } }
+# EIC Endpoint subnets
+resource "aws_subnet" "eic" {
+  for_each = { for idx, az in local.azs : az => { cidr = local.eic_subnets[idx], az = az } }
   vpc_id            = aws_vpc.this.id
   cidr_block        = each.value.cidr
   availability_zone = each.value.az
-  tags = { Name = "${var.project_name}-a-priv-t1-${each.value.az}", Tier = "private-1" }
+  tags = { Name = "${var.project_name}-a-eic-${each.value.az}", Tier = "eic" }
 }
 
-resource "aws_subnet" "priv_t2" {
-  for_each = { for idx, az in local.azs : az => { cidr = local.vpc_a_priv_t2[idx], az = az } }
+# EC2 instance subnets
+resource "aws_subnet" "ec2" {
+  for_each = { for idx, az in local.azs : az => { cidr = local.ec2_subnets[idx], az = az } }
   vpc_id            = aws_vpc.this.id
   cidr_block        = each.value.cidr
   availability_zone = each.value.az
-  tags = { Name = "${var.project_name}-a-priv-t2-${each.value.az}", Tier = "private-2" }
+  tags = { Name = "${var.project_name}-a-ec2-${each.value.az}", Tier = "ec2" }
 }
 
-resource "aws_route_table_association" "t1_assoc" {
-  for_each       = aws_subnet.priv_t1
+resource "aws_route_table_association" "eic_assoc" {
+  for_each       = aws_subnet.eic
   subnet_id      = each.value.id
   route_table_id = aws_route_table.private.id
 }
 
-resource "aws_route_table_association" "t2_assoc" {
-  for_each       = aws_subnet.priv_t2
+resource "aws_route_table_association" "ec2_assoc" {
+  for_each       = aws_subnet.ec2
   subnet_id      = each.value.id
   route_table_id = aws_route_table.private.id
 }
 
-# EIC endpoint in first private subnet
-resource "aws_security_group" "eic_sg" {
-  name   = "${var.project_name}-a-eic-sg"
+# Security Group for VPC Endpoints
+resource "aws_security_group" "vpc_endpoints" {
+  name   = "${var.project_name}-a-vpc-endpoints-sg"
   vpc_id = aws_vpc.this.id
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+  
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = [var.vpc_cidr]
   }
-  tags = { Name = "${var.project_name}-a-eic-sg" }
-}
-
-resource "aws_ec2_instance_connect_endpoint" "eic" {
-  subnet_id          = values(aws_subnet.priv_t1)[0].id
-  security_group_ids = [aws_security_group.eic_sg.id]
-  tags               = { Name = "${var.project_name}-a-eic" }
-}
-
-# Consumer instance
-resource "aws_security_group" "consumer_sg" {
-  name   = "${var.project_name}-a-consumer-sg"
-  vpc_id = aws_vpc.this.id
-  ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.eic_sg.id]
-  }
+  
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  tags = { Name = "${var.project_name}-a-consumer-sg" }
+  
+  tags = { Name = "${var.project_name}-a-vpc-endpoints-sg" }
 }
 
-resource "aws_instance" "consumer" {
-  ami                         = data.aws_ami.al2.id
-  instance_type               = var.instance_type
-  subnet_id                   = values(aws_subnet.priv_t1)[0].id
-  vpc_security_group_ids      = [aws_security_group.consumer_sg.id]
-  associate_public_ip_address = false
-  key_name                    = var.existing_key_pair_name
-  tags = { Name = "${var.project_name}-a-consumer" }
-}
-
-# Interface VPC Endpoint to Provider service
-resource "aws_security_group" "vpce_sg" {
-  name   = "${var.project_name}-a-vpce-sg"
-  vpc_id = aws_vpc.this.id
-  ingress {
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.consumer_sg.id]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  tags = { Name = "${var.project_name}-a-vpce-sg" }
-}
-
-resource "aws_vpc_endpoint" "consumer_vpce" {
+# VPC Endpoints for Session Manager
+resource "aws_vpc_endpoint" "ssm" {
   vpc_id              = aws_vpc.this.id
-  service_name        = var.provider_service_name
+  service_name        = "com.amazonaws.${var.region}.ssm"
   vpc_endpoint_type   = "Interface"
-  subnet_ids          = [values(aws_subnet.priv_t2)[0].id, values(aws_subnet.priv_t2)[1].id]
-  security_group_ids  = [aws_security_group.vpce_sg.id]
-  private_dns_enabled = false
-  tags = { Name = "${var.project_name}-a-to-b-vpce" }
+  subnet_ids          = [for subnet in aws_subnet.ec2 : subnet.id]
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+  tags = { Name = "${var.project_name}-a-ssm-endpoint" }
 }
+
+resource "aws_vpc_endpoint" "ssmmessages" {
+  vpc_id              = aws_vpc.this.id
+  service_name        = "com.amazonaws.${var.region}.ssmmessages"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [for subnet in aws_subnet.ec2 : subnet.id]
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+  tags = { Name = "${var.project_name}-a-ssmmessages-endpoint" }
+}
+
+resource "aws_vpc_endpoint" "ec2messages" {
+  vpc_id              = aws_vpc.this.id
+  service_name        = "com.amazonaws.${var.region}.ec2messages"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [for subnet in aws_subnet.ec2 : subnet.id]
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+  tags = { Name = "${var.project_name}-a-ec2messages-endpoint" }
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id          = aws_vpc.this.id
+  service_name    = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids = [aws_route_table.private.id]
+  tags = { Name = "${var.project_name}-a-s3-endpoint" }
+}
+

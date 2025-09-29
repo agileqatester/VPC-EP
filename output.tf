@@ -81,12 +81,36 @@ output "hosted_zone_id" {
   value       = var.enable_dns ? module.dns[0].hosted_zone_id : null
 }
 
+# Consumer VPC Outputs
+output "consumer_vpc_id" {
+  description = "ID of the Consumer VPC"
+  value       = module.consumer_vpc_a.vpc_id
+}
+
+output "consumer_instance_id" {
+  description = "ID of the Consumer EC2 instance"
+  value       = module.consumer_ec2.ec2_instance_id
+}
+
+output "vpc_endpoint_dns_entries" {
+  description = "DNS entries for the VPC Endpoint"
+  value       = aws_vpc_endpoint.consumer_to_provider.dns_entry
+}
+
+output "provider_service_name" {
+  description = "VPC Endpoint Service name for PrivateLink"
+  value       = aws_vpc_endpoint_service.provider_service.service_name
+}
+
 # Connection Information
 output "connection_info" {
   description = "Information for connecting to the infrastructure"
   value = {
-    load_balancer_url = "http://${module.lb.lb_dns_name}"
-    eic_connect_command = "aws ec2-instance-connect ssh --instance-id ${module.ec2.ec2_instance_id} --os-user ec2-user --connection-type eice"
-    session_manager_command = "aws ssm start-session --target ${module.ec2.ec2_instance_id}"
+    provider_load_balancer_url = "http://${module.lb.lb_dns_name}"
+    provider_eic_connect_command = "aws ec2-instance-connect ssh --instance-id ${module.ec2.ec2_instance_id} --os-user ec2-user --connection-type eice"
+    provider_session_manager_command = "aws ssm start-session --target ${module.ec2.ec2_instance_id}"
+    consumer_eic_connect_command = "aws ec2-instance-connect ssh --instance-id ${module.consumer_ec2.ec2_instance_id} --os-user ec2-user --connection-type eice"
+    consumer_session_manager_command = "aws ssm start-session --target ${module.consumer_ec2.ec2_instance_id}"
+    vpc_endpoint_test_url = "http://${aws_vpc_endpoint.consumer_to_provider.dns_entry[0].dns_name}"
   }
 }

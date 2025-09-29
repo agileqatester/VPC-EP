@@ -120,3 +120,9 @@ variable "app_port" {
   type        = number
   default     = 8080
 }
+
+variable "consumer_vpc_cidr" {
+  description = "CIDR block for Consumer VPC A"
+  type        = string
+  default     = "10.1.0.0/16"
+}
