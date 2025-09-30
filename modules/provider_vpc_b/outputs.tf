@@ -10,6 +10,11 @@ output "vpc_cidr" {
   value       = aws_vpc.main.cidr_block
 }
 
+output "selected_azs" {
+  description = "The Availability Zones selected for this VPC"
+  value       = local.azs
+}
+
 output "private_subnet_1_id" {
   description = "ID of the first private subnet"
   value       = aws_subnet.private_1.id

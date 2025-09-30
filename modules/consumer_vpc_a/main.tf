@@ -1,10 +1,6 @@
 
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
 locals {
-  azs = slice(data.aws_availability_zones.available.names, 0, 2)
+  azs = var.provider_azs
   eic_subnets = [ cidrsubnet(var.vpc_cidr, 4, 0), cidrsubnet(var.vpc_cidr, 4, 1) ]
   ec2_subnets = [ cidrsubnet(var.vpc_cidr, 4, 2), cidrsubnet(var.vpc_cidr, 4, 3) ]
 }

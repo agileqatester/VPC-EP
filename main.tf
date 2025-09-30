@@ -1,8 +1,3 @@
-# Data source for availability zones
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
 # Provider VPC Module
 module "provider_vpc_b" {
   source = "./modules/provider_vpc_b"
@@ -78,6 +73,7 @@ module "consumer_vpc_a" {
   region       = var.aws_region
   project_name = var.project_name
   vpc_cidr     = var.consumer_vpc_cidr
+  provider_azs = module.provider_vpc_b.selected_azs
 }
 
 # VPC Endpoint Service for PrivateLink
