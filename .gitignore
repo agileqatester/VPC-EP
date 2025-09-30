@@ -3,10 +3,12 @@
 *.tfstate
 *.tfstate.*
 .terraform/
-# terraform.tfvars
 *.tf_bk
-*.tfvars
 *.tfvars.json
+
+# Exclude environment-specific tfvars but allow main terraform.tfvars
+environments/*.tfvars
+# terraform.tfvars is tracked
 crash.log
 override.tf
 override.tf.json
