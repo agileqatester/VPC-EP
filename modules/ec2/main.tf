@@ -165,6 +165,81 @@ resource "aws_instance" "main" {
   }
 }
 
+# Launch Template for ASG
+resource "aws_launch_template" "main" {
+  count = var.enable_asg ? 1 : 0
+  
+  name_prefix   = "${var.project_name}-lt-"
+  image_id      = data.aws_ami.amazon_linux.id
+  instance_type = var.instance_type
+  key_name      = aws_key_pair.main.key_name
+  
+  vpc_security_group_ids = [aws_security_group.ec2.id]
+  
+  iam_instance_profile {
+    name = var.ec2_instance_profile
+  }
+  
+  user_data = base64encode(templatefile("${path.module}/user_data.sh.tpl", {
+    s3_bucket_name = var.s3_bucket_name
+    hostname       = "${var.project_name}-server"
+    aws_region     = var.aws_region
+    app_port       = var.app_port 
+  }))
+  
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_type           = "gp3"
+      volume_size           = var.root_volume_size
+      iops                  = var.root_volume_iops
+      throughput            = var.root_volume_throughput
+      encrypted             = true
+      delete_on_termination = true
+    }
+  }
+  
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name        = "${var.project_name}-asg-instance"
+      Environment = var.environment
+    }
+  }
+}
+
+# Auto Scaling Group
+resource "aws_autoscaling_group" "main" {
+  count = var.enable_asg ? 1 : 0
+  
+  name                = "${var.project_name}-asg"
+  vpc_zone_identifier = var.private_subnet_ids
+  target_group_arns   = []
+  health_check_type   = "EC2"
+  health_check_grace_period = 300
+  
+  min_size         = var.asg_min_size
+  max_size         = var.asg_max_size
+  desired_capacity = var.asg_desired_capacity
+  
+  launch_template {
+    id      = aws_launch_template.main[0].id
+    version = "$Latest"
+  }
+  
+  tag {
+    key                 = "Name"
+    value               = "${var.project_name}-asg"
+    propagate_at_launch = false
+  }
+  
+  tag {
+    key                 = "Environment"
+    value               = var.environment
+    propagate_at_launch = true
+  }
+}
+
 # CloudWatch Log Group for application logs
 resource "aws_cloudwatch_log_group" "app_logs" {
   name              = "/aws/ec2/${var.project_name}"

@@ -151,3 +151,27 @@ variable "confirm_var_files" {
     error_message = "\n\n🚨 STOP! Use environment-specific var files:\n\n  Dev:  terraform apply -var-file=environments/dev.tfvars -var-file=terraform.tfvars\n  Prod: terraform apply -var-file=environments/prod.tfvars -var-file=terraform.tfvars\n\n  Or set confirm_var_files=true if using defaults intentionally.\n"
   }
 }
+
+variable "enable_asg" {
+  description = "Enable Auto Scaling Group for EC2 instances"
+  type        = bool
+  default     = false
+}
+
+variable "asg_min_size" {
+  description = "Minimum number of instances in ASG"
+  type        = number
+  default     = 1
+}
+
+variable "asg_max_size" {
+  description = "Maximum number of instances in ASG"
+  type        = number
+  default     = 1
+}
+
+variable "asg_desired_capacity" {
+  description = "Desired number of instances in ASG"
+  type        = number
+  default     = 1
+}

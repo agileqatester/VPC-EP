@@ -2,15 +2,17 @@
 
 ## Overview
 
-This Terraform project creates a complete AWS VPC PrivateLink setup demonstrating secure cross-VPC communication without internet routing. The infrastructure includes two VPCs connected via AWS PrivateLink, with EC2 instances accessible through EIC (EC2 Instance Connect) endpoints.
+This Terraform project creates a production-ready AWS VPC PrivateLink setup demonstrating secure cross-VPC communication without internet routing. The infrastructure includes two VPCs connected via AWS PrivateLink, with environment-specific configurations for development and production workloads.
 
 ## Architecture
 
 ### Provider VPC (10.0.0.0/16)
-- **EC2 Instance**: Runs Python HTTP server on port 8080
-- **Network Load Balancer**: Routes traffic to EC2 instance
+- **EC2 Instances**: Runs Python HTTP server on port 8080
+  - **Dev**: Single instance (t3.micro)
+  - **Prod**: Auto Scaling Group with 2-4 instances (t3.2xlarge) across multiple AZs
+- **Network Load Balancer**: Routes traffic to EC2 instances with health checks
 - **VPC Endpoint Service**: Exposes NLB via PrivateLink
-- **EIC Endpoint**: Secure SSH access to EC2
+- **EIC Endpoint**: Secure SSH access to EC2 instances
 
 ### Consumer VPC (10.1.0.0/16)
 - **EC2 Instance**: Client instance for testing connectivity
@@ -20,15 +22,25 @@ This Terraform project creates a complete AWS VPC PrivateLink setup demonstratin
 
 ### Connection Flow
 ```
-Consumer EC2 → Route53 (api.provider.local) → VPC Endpoint → PrivateLink → NLB → Provider EC2
+Consumer EC2 → Route53 (api.provider.local) → VPC Endpoint → PrivateLink → NLB → Provider EC2(s)
 ```
 
 ## Environment Configuration
 
-The project supports multiple environments (dev/prod) with different instance sizes and storage configurations:
+The project supports environment-specific configurations optimized for different use cases:
 
-- **Dev**: t3.micro, 30GB storage, 3000 IOPS
-- **Prod**: t3.2xlarge, 100GB storage, 10000 IOPS
+### Development Environment
+- **Instance**: t3.micro (cost-optimized)
+- **Storage**: 30GB, 3000 IOPS
+- **Deployment**: Single AZ, single instance
+- **Cost**: Minimal for testing and development
+
+### Production Environment
+- **Instance**: t3.2xlarge (performance-optimized)
+- **Storage**: 100GB, 10000 IOPS
+- **Deployment**: Multi-AZ Auto Scaling Group (2-4 instances)
+- **High Availability**: Automatic failover and recovery
+- **Cross-AZ Considerations**: Accepts minimal data transfer fees for HA benefits
 
 ## Usage
 
@@ -85,10 +97,13 @@ terraform destroy -var-file=environments/dev.tfvars -var-file=terraform.tfvars
 ## Key Features
 
 - **Security**: No internet gateways, all communication via private networks
-- **Scalability**: Environment-specific instance sizing
+- **High Availability**: Production Auto Scaling Group across multiple AZs
+- **Environment-Specific**: Dev (single instance) vs Prod (ASG with 2-4 instances)
+- **Cross-AZ Optimization**: Same AZ deployment to minimize data transfer costs
 - **Accessibility**: EIC endpoints for secure SSH access
 - **DNS**: Friendly DNS names for service discovery
 - **Monitoring**: CloudWatch integration for logging
+- **Auto Recovery**: ASG automatically replaces failed instances in production
 
 ## Important Notes
 
@@ -97,3 +112,9 @@ terraform destroy -var-file=environments/dev.tfvars -var-file=terraform.tfvars
 🔒 **Private Communication** - All traffic flows through AWS private networks, no internet routing required.
 
 📊 **Cost Optimization** - Use dev environment for testing, prod for production workloads.
+
+🏗️ **Production Architecture** - Prod environment deploys Auto Scaling Group with multi-AZ instances for high availability.
+
+💰 **Cross-AZ Data Transfer** - Production accepts minimal cross-AZ fees (~$0.01/GB) for high availability benefits.
+
+🔄 **Auto Recovery** - ASG automatically maintains desired capacity and replaces unhealthy instances.

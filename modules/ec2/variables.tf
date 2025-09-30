@@ -77,3 +77,33 @@ variable "app_port" {
   type        = number
   default     = 8080
 }
+
+variable "enable_asg" {
+  description = "Enable Auto Scaling Group"
+  type        = bool
+  default     = false
+}
+
+variable "asg_min_size" {
+  description = "Minimum number of instances in ASG"
+  type        = number
+  default     = 1
+}
+
+variable "asg_max_size" {
+  description = "Maximum number of instances in ASG"
+  type        = number
+  default     = 1
+}
+
+variable "asg_desired_capacity" {
+  description = "Desired number of instances in ASG"
+  type        = number
+  default     = 1
+}
+
+variable "private_subnet_ids" {
+  description = "List of private subnet IDs for ASG"
+  type        = list(string)
+  default     = []
+}

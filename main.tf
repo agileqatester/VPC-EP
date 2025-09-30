@@ -30,6 +30,7 @@ module "ec2" {
   environment            = var.environment
   vpc_id                 = module.provider_vpc_b.vpc_id
   private_subnet_1_id    = module.provider_vpc_b.private_subnet_1_id
+  private_subnet_ids     = [module.provider_vpc_b.private_subnet_1_id, module.provider_vpc_b.private_subnet_2_id]
   instance_type          = var.instance_type
   root_volume_size       = var.root_volume_size
   root_volume_iops       = var.root_volume_iops
@@ -39,6 +40,10 @@ module "ec2" {
   aws_region             = var.aws_region
   ec2_instance_profile   = module.iam.ec2_instance_profile_name
   vpc_endpoints          = module.provider_vpc_b.vpc_endpoints
+  enable_asg             = var.enable_asg
+  asg_min_size           = var.asg_min_size
+  asg_max_size           = var.asg_max_size
+  asg_desired_capacity   = var.asg_desired_capacity
 }
 
 # EIC Module
