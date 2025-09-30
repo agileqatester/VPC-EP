@@ -1,4 +1,3 @@
-
 locals {
   azs = var.provider_azs
   eic_subnets = [ cidrsubnet(var.vpc_cidr, 4, 0), cidrsubnet(var.vpc_cidr, 4, 1) ]
