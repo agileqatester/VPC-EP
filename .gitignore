@@ -7,7 +7,7 @@
 *.tfvars.json
 
 # Exclude environment-specific tfvars but allow main terraform.tfvars
-environments/*.tfvars
+#environments/*.tfvars
 # terraform.tfvars is tracked
 crash.log
 override.tf
